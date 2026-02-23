@@ -623,4 +623,36 @@
 
                 let aiResponse = data.resposta.replace(/\n/g, '<br>');
 
-                const oracao = `<b>🙏 Pai nosso, que estais nos céus,
+                const oracao = `<b>🙏 Pai nosso, que estais nos céus, santificado seja o vosso nome, venha a nós o vosso reino, seja feita a vossa vontade, assim na terra como no céu. O Pão nosso de cada dia nos dai hoje. Perdoai as nossas ofensas, assim como nós perdoamos a quem nos tem ofendido, mas livrai-nos do mal. Amém!</b><br><br><hr style="border-color: #d4af37; opacity: 0.3; margin: 10px 0;"><br>`;
+                
+                addMessage(oracao + aiResponse, "bot");
+
+            } catch (error) {
+                console.error("Erro:", error);
+                addMessage(`⚠️ <b>As energias estão turvas:</b> Não foi possível conectar ao universo. Tente novamente.`, "bot");
+            } finally {
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            setTimeout(() => {
+                addMessage("As cartas falaram. ✨ Clique abaixo se desejar consultar o Oráculo novamente.", "bot");
+                showRestartMode();
+            }, 2000);
+        }
+
+        function restartCycle() {
+            drawnCards      = [];
+            currentQuestion = "";
+            canPickCards    = false;
+
+            chosenContainer.innerHTML = '';
+            spreadContainer.innerHTML = '';
+
+            showInputMode();
+        }
+
+    </script>
+</body>
+</html>
