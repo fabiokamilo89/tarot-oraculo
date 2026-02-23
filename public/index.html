@@ -23,8 +23,6 @@
             color: var(--text-light);
             display: flex;
             justify-content: center;
-            height: 100dvh;
-            overflow: hidden;
             position: relative;
         }
 
@@ -277,15 +275,27 @@
         .card-emoji { font-size: 2.2rem; margin-bottom: 8px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2)); }
         .card-name { font-size: 0.7rem; font-weight: bold; line-height: 1.2; text-transform: uppercase; }
 
-        @media (max-width: 480px) {
+                @media (max-width: 480px) {
+            .app-container {
+                height: auto; /* Permite que o fundo roxo cresça junto com as cartas */
+                min-height: 100vh;
+            }
+            .chat-section {
+                max-height: 300px; /* Limita a altura do chat para não empurrar as cartas pro infinito */
+            }
             .spread-card { width: 16px; height: 30px; }
             .card { width: 70px; height: 115px; }
             .card-emoji { font-size: 1.6rem; }
             .card-name { font-size: 0.6rem; }
             header h1 { font-size: 1.3rem; }
             #mute-btn { width: 30px; height: 30px; font-size: 0.9rem; }
-            .tarot-desk { min-height: 200px; padding: 10px; }
+            .tarot-desk { 
+                min-height: 200px; 
+                padding: 10px; 
+                overflow-y: visible; /* Garante que as cartas não sejam cortadas */
+            }
         }
+
     </style>
 </head>
 <body>
