@@ -23,7 +23,7 @@
             color: var(--text-light);
             display: flex;
             justify-content: center;
-            height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             position: relative;
         }
@@ -42,6 +42,7 @@
         .app-container {
             width: 100%;
             max-width: 650px;
+            height: 100%;
             display: flex;
             flex-direction: column;
             background: var(--chat-bg);
@@ -199,6 +200,8 @@
             border-top: 1px solid rgba(212, 175, 55, 0.4);
             min-height: 250px;
             box-shadow: inset 0 10px 20px rgba(0,0,0,0.5);
+            overflow-y: auto;
+            flex-shrink: 0;
         }
 
         .chosen-container {
@@ -274,22 +277,14 @@
         .card-emoji { font-size: 2.2rem; margin-bottom: 8px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2)); }
         .card-name { font-size: 0.7rem; font-weight: bold; line-height: 1.2; text-transform: uppercase; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes popIn {
-            0% { opacity: 0; transform: translateY(30px) scale(0.5) rotate(-10deg); }
-            100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
-        }
-
         @media (max-width: 480px) {
-            .spread-card { width: 18px; height: 34px; }
+            .spread-card { width: 16px; height: 30px; }
             .card { width: 70px; height: 115px; }
             .card-emoji { font-size: 1.6rem; }
             .card-name { font-size: 0.6rem; }
             header h1 { font-size: 1.3rem; }
             #mute-btn { width: 30px; height: 30px; font-size: 0.9rem; }
+            .tarot-desk { min-height: 200px; padding: 10px; }
         }
     </style>
 </head>
@@ -319,9 +314,6 @@
     </div>
 
     <script>
-        // A CHAVE DE API FOI REMOVIDA DAQUI POR SEGURANÇA! 
-        // AGORA ELA VIVE ESCONDIDA NO ARQUIVO .env DO BACKEND.
-
         // ==========================================
         // SISTEMA DE ÁUDIO
         // ==========================================
@@ -436,7 +428,6 @@
                 osc.stop(time + 0.4);
             });
         }
-
 
         // ==========================================
         // TAROT E LÓGICA
@@ -609,10 +600,8 @@
         // ==========================================
         async function fetchReading() {
             try {
-                // Cria um array só com os nomes das cartas para o backend entender fácil
                 const nomesDasCartas = drawnCards.map(carta => carta.nome);
 
-                // Em vez de chamar a URL do Google, chama o seu servidor!
                 const response = await fetch('/api/tarot', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -626,48 +615,12 @@
                     throw new Error(`Erro de comunicação com o Oráculo (Status: ${response.status})`);
                 }
 
-                // Recebe a resposta mágica que o seu server.js gerou
                 const data = await response.json();
 
                 if (data.erro) {
                     throw new Error(data.erro);
                 }
 
-                // Troca as quebras de linha por <br> para ficar bonito no HTML
                 let aiResponse = data.resposta.replace(/\n/g, '<br>');
 
-                // Adiciona a Oração do Pai Nosso no começo (com um separador dourado)
-                const oracao = `<b>🙏 Pai nosso, que estais nos céus, santificado seja o vosso nome, venha a nós o vosso reino, seja feita a vossa vontade, assim na terra como no céu. O Pão nosso de cada dia nos dai hoje. Perdoai as nossas ofensas, assim como nós perdoamos a quem nos tem ofendido, mas livrai-nos do mal. Amém!</b><br><br><hr style="border-color: #d4af37; opacity: 0.3; margin: 10px 0;"><br>`;
-                
-                // Exibe no chat
-                addMessage(oracao + aiResponse, "bot");
-
-            } catch (error) {
-                console.error("Erro:", error);
-                addMessage(`⚠️ <b>As energias estão turvas:</b> Não foi possível conectar ao universo. Tente novamente.`, "bot");
-            } finally {
-                resetGame();
-            }
-        }
-
-        function resetGame() {
-            setTimeout(() => {
-                addMessage("As cartas falaram. ✨ Clique abaixo se desejar consultar o Oráculo novamente.", "bot");
-                showRestartMode();
-            }, 2000);
-        }
-
-        function restartCycle() {
-            drawnCards      = [];
-            currentQuestion = "";
-            canPickCards    = false;
-
-            chosenContainer.innerHTML = '';
-            spreadContainer.innerHTML = '';
-
-            showInputMode();
-        }
-
-    </script>
-</body>
-</html>
+                const oracao = `<b>🙏 Pai nosso, que estais nos céus,
