@@ -1,0 +1,53 @@
+const express = require('express');
+const cors = require('cors');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+require('dotenv').config();
+
+const app = express();
+const port = 3000;
+
+// Configurações básicas de segurança e comunicação
+app.use(cors());
+app.use(express.json());
+
+// Esta linha diz ao servidor para mostrar o seu site (HTML, CSS, JS, MP3) que ficará na pasta "public"
+app.use(express.static('public')); 
+
+// Conectando com o Google Gemini usando a chave escondida no .env
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
+
+// Rota (Backend) que o seu Frontend vai chamar quando o usuário fizer a pergunta
+app.post('/api/tarot', async (req, res) => {
+    try {
+        const { pergunta, cartas } = req.body; // Recebe as informações do seu HTML
+
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // O comando exato que a IA vai receber, garantindo a oração e o tom místico
+        const prompt = `
+        Você é um oráculo de tarot místico e sábio.
+        O consulente fez a seguinte pergunta: "${pergunta}".
+        As cartas sorteadas pelo destino foram: ${cartas.join(', ')}.
+        
+        Sua tarefa:
+        1. Inicie a sua resposta SEMPRE com a oração do Pai Nosso.
+        2. Em seguida, interprete o significado dessas cartas de forma profunda, poética e mística para responder à pergunta.
+        3. Responda em português do Brasil (PT-BR).
+        `;
+
+        const result = await model.generateContent(prompt);
+        const respostaIA = result.response.text();
+
+        // Devolve a resposta pronta para o seu site
+        res.json({ resposta: respostaIA });
+        
+    } catch (error) {
+        console.error("Erro ao ler as cartas:", error);
+        res.status(500).json({ erro: "As energias estão turvas no momento. Tente novamente." });
+    }
+});
+
+// Liga o servidor
+app.listen(port, () => {
+    console.log(`🔮 Servidor místico do Tarot está rodando!`);
+    console.log(`Acesse o seu site em: http://localhost:${port}`);

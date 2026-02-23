@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oráculo de IA - Leitura de Tarot</title>
+    <style>
+        :root {
+            --bg-color: #08030d;
+            --chat-bg: rgba(21, 10, 33, 0.85);
+            --primary-gold: #d4af37;
+            --gold-hover: #ffdf73;
+            --text-light: #f2e6ff;
+            --user-msg: #d4af37;
+            --bot-msg: #2b1445;
+            --card-back: #1c0d2e;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Georgia', serif; }
+
+        body {
+            background: radial-gradient(circle at 50% 40%, #1e0b36 0%, var(--bg-color) 80%);
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(rgba(212, 175, 55, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.5;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 650px;
+            display: flex;
+            flex-direction: column;
+            background: var(--chat-bg);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
+            z-index: 1;
+            backdrop-filter: blur(5px);
+            border-left: 1px solid rgba(212, 175, 55, 0.2);
+            border-right: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        header {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(180deg, #130721 0%, transparent 100%);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            position: relative; 
+        }
+        header h1 {
+            font-size: 1.6rem;
+            color: var(--primary-gold);
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+            letter-spacing: 3px;
+        }
+
+        #mute-btn {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            background: transparent;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            color: var(--primary-gold);
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+            line-height: 1;
+        }
+        #mute-btn:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+        }
+
+        .chat-section {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-gold) transparent;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            animation: fadeIn 0.4s ease-out;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .message.bot {
+            align-self: flex-start;
+            background-color: var(--bot-msg);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: var(--text-light);
+            border-bottom-left-radius: 2px;
+        }
+        .message.user {
+            align-self: flex-end;
+            background-color: var(--user-msg);
+            color: #120a1f;
+            font-weight: bold;
+            border-bottom-right-radius: 2px;
+        }
+
+        .input-section {
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid rgba(212, 175, 55, 0.2);
+            background: rgba(10, 4, 18, 0.9);
+            align-items: center;
+        }
+
+        #question-input {
+            flex: 1;
+            background: #190a29;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            color: var(--text-light);
+            padding: 12px 15px;
+            border-radius: 20px;
+            outline: none;
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+        #question-input:focus {
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+        }
+
+        #send-btn {
+            background: var(--primary-gold);
+            color: #120a1f;
+            border: none;
+            padding: 0 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+            height: 44px;
+        }
+        #send-btn:hover { background: var(--gold-hover); box-shadow: 0 0 10px var(--gold-hover); }
+        #send-btn:disabled { background: #444; color: #777; cursor: not-allowed; box-shadow: none; }
+
+        #restart-btn {
+            display: none;
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--primary-gold);
+            color: var(--primary-gold);
+            padding: 13px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Georgia', serif;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            text-align: center;
+        }
+        #restart-btn:hover {
+            background: rgba(212, 175, 55, 0.12);
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.35);
+            color: var(--gold-hover);
+            border-color: var(--gold-hover);
+        }
+
+        .tarot-desk {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(8, 3, 13, 0.95);
+            border-top: 1px solid rgba(212, 175, 55, 0.4);
+            min-height: 250px;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .chosen-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            min-height: 130px;
+        }
+
+        .spread-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            gap: 4px;
+            padding: 5px;
+        }
+
+        .spread-card {
+            width: 24px;
+            height: 44px;
+            background: repeating-linear-gradient(45deg, var(--card-back), var(--card-back) 4px, #261140 4px, #261140 8px);
+            border: 1px solid rgba(212, 175, 55, 0.7);
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        .spread-card:hover {
+            transform: translateY(-8px) scale(1.2);
+            box-shadow: 0 0 12px var(--primary-gold);
+            border-color: var(--gold-hover);
+            z-index: 10;
+        }
+        .spread-card.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0);
+        }
+
+        .card {
+            width: 85px;
+            height: 140px;
+            perspective: 1000px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateY(180deg);
+        }
+        .card-back {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            border: 2px solid var(--primary-gold);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+            background: linear-gradient(135deg, #fffdf7 0%, #f4ebd8 100%);
+            color: #120a1f;
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 5px;
+        }
+        .card-emoji { font-size: 2.2rem; margin-bottom: 8px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2)); }
+        .card-name { font-size: 0.7rem; font-weight: bold; line-height: 1.2; text-transform: uppercase; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes popIn {
+            0% { opacity: 0; transform: translateY(30px) scale(0.5) rotate(-10deg); }
+            100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+        }
+
+        @media (max-width: 480px) {
+            .spread-card { width: 18px; height: 34px; }
+            .card { width: 70px; height: 115px; }
+            .card-emoji { font-size: 1.6rem; }
+            .card-name { font-size: 0.6rem; }
+            header h1 { font-size: 1.3rem; }
+            #mute-btn { width: 30px; height: 30px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" src="musica.mp3" loop></audio>
+
+    <div class="app-container">
+
+        <header>
+            <h1>✦ Oráculo de IA ✦</h1>
+            <button id="mute-btn" title="Mutar / Desmutar música de fundo">🔊</button>
+        </header>
+
+        <div class="chat-section" id="chat-section"></div>
+
+        <div class="input-section" id="input-section">
+            <input type="text" id="question-input" placeholder="O que você deseja saber?" autocomplete="off">
+            <button id="send-btn">Enviar</button>
+            <button id="restart-btn">🔮 Fazer outra pergunta</button>
+        </div>
+
+        <div class="tarot-desk" id="tarot-desk">
+            <div id="chosen-container" class="chosen-container"></div>
+            <div id="spread-container" class="spread-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // A CHAVE DE API FOI REMOVIDA DAQUI POR SEGURANÇA! 
+        // AGORA ELA VIVE ESCONDIDA NO ARQUIVO .env DO BACKEND.
+
+        // ==========================================
+        // SISTEMA DE ÁUDIO
+        // ==========================================
+        let audioCtx = null;
+        let masterGain = null;
+        let audioStarted = false;
+
+        const bgMusic = document.getElementById('bg-music');
+        bgMusic.volume = 0.1;
+
+        const muteBtn = document.getElementById('mute-btn');
+        muteBtn.addEventListener('click', () => {
+            bgMusic.muted = !bgMusic.muted;
+            muteBtn.textContent = bgMusic.muted ? '🔇' : '🔊';
+            muteBtn.title = bgMusic.muted ? 'Desmutar música de fundo' : 'Mutar música de fundo';
+        });
+
+        function initAudio() {
+            if (audioStarted) return;
+            try {
+                bgMusic.play().catch(e => console.warn("Música bloqueada pelo navegador."));
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+
+                audioCtx = new AudioContext();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = 0.5;
+                masterGain.connect(audioCtx.destination);
+                audioStarted = true;
+            } catch (e) {
+                console.warn("Áudio não suportado, mas o jogo continua.");
+            }
+        }
+
+        function playHoverChime() {
+            if (!audioCtx || audioCtx.state === 'suspended') return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                const notas = [587.33, 659.25, 783.99, 880.00, 1046.50];
+                const notaAleatoria = notas[Math.floor(Math.random() * notas.length)];
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(notaAleatoria, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+
+                osc.connect(gainNode);
+                gainNode.connect(masterGain);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1.5);
+            } catch (e) {}
+        }
+
+        function playButtonHoverSound() {
+            if (!audioCtx || audioCtx.state === 'suspended') return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.2); 
+
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.1);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+
+                osc.connect(gainNode);
+                gainNode.connect(masterGain);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } catch (e) {}
+        }
+
+        function playRestartSound() {
+            if (!audioCtx || audioCtx.state === 'suspended') return;
+            const now = audioCtx.currentTime;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(50, now + 0.2); 
+            
+            gain.gain.setValueAtTime(0.4, now); 
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            
+            osc.connect(gain).connect(masterGain);
+            osc.start(now);
+            osc.stop(now + 0.2);
+        }
+
+        function playCardSelectSound() {
+            if (!audioCtx || audioCtx.state === 'suspended') return;
+            const now = audioCtx.currentTime;
+            [880, 1108, 1318].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                
+                const time = now + (i * 0.05); 
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(0.1, time + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
+                
+                osc.connect(gain).connect(masterGain);
+                osc.start(time);
+                osc.stop(time + 0.4);
+            });
+        }
+
+
+        // ==========================================
+        // TAROT E LÓGICA
+        // ==========================================
+        const arcanosMaiores = [
+            {nome: "O Louco", emoji: "🃏"}, {nome: "O Mago", emoji: "🪄"},
+            {nome: "A Sacerdotisa", emoji: "🔮"}, {nome: "A Imperatriz", emoji: "👑"},
+            {nome: "O Imperador", emoji: "🪑"}, {nome: "O Hierofante", emoji: "⛪"},
+            {nome: "Os Enamorados", emoji: "💖"}, {nome: "O Carro", emoji: "🐎"},
+            {nome: "A Justiça", emoji: "⚖️"}, {nome: "O Eremita", emoji: "🏮"},
+            {nome: "A Roda da Fortuna", emoji: "🎡"}, {nome: "A Força", emoji: "🦁"},
+            {nome: "O Enforcado", emoji: "🙃"}, {nome: "A Morte", emoji: "💀"},
+            {nome: "A Temperança", emoji: "🏺"}, {nome: "O Diabo", emoji: "😈"},
+            {nome: "A Torre", emoji: "⚡"}, {nome: "A Estrela", emoji: "⭐"},
+            {nome: "A Lua", emoji: "🌙"}, {nome: "O Sol", emoji: "☀️"},
+            {nome: "O Julgamento", emoji: "📯"}, {nome: "O Mundo", emoji: "🌍"}
+        ];
+
+        const naipes = [
+            {nome: "Paus", emoji: "🪵"}, {nome: "Copas", emoji: "🏆"},
+            {nome: "Espadas", emoji: "⚔️"}, {nome: "Ouros", emoji: "🪙"}
+        ];
+        const valores = ["Ás","2","3","4","5","6","7","8","9","10","Pajem","Cavaleiro","Rainha","Rei"];
+
+        const tarotDeck = [...arcanosMaiores];
+        naipes.forEach(naipe => {
+            valores.forEach(valor => {
+                tarotDeck.push({nome: `${valor} de ${naipe.nome}`, emoji: naipe.emoji});
+            });
+        });
+
+        let currentQuestion = "";
+        let drawnCards    = [];
+        let canPickCards  = false;
+        let deckCopy      = [];
+
+        const chatSection     = document.getElementById('chat-section');
+        const questionInput   = document.getElementById('question-input');
+        const sendBtn         = document.getElementById('send-btn');
+        const restartBtn      = document.getElementById('restart-btn');
+        const spreadContainer = document.getElementById('spread-container');
+        const chosenContainer = document.getElementById('chosen-container');
+
+        function addMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', sender);
+            msgDiv.innerHTML = text;
+            chatSection.appendChild(msgDiv);
+        }
+
+        function showInputMode() {
+            questionInput.style.display = 'flex';
+            sendBtn.style.display       = 'block';
+            restartBtn.style.display    = 'none';
+            questionInput.disabled = false;
+            sendBtn.disabled       = false;
+            questionInput.focus();
+        }
+
+        function showRestartMode() {
+            questionInput.style.display = 'none';
+            sendBtn.style.display       = 'none';
+            restartBtn.style.display    = 'block';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                addMessage("Olá! Sou o Oráculo de IA. Posso ler o seu futuro ou aconselhar sobre qualquer assunto usando a sabedoria do Tarot. Qual é a sua pergunta hoje?", "bot");
+            }, 500);
+        });
+
+        sendBtn.addEventListener('click', handleSend);
+        questionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSend();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            playRestartSound();
+            restartCycle();
+        });
+
+        restartBtn.addEventListener('mouseenter', () => {
+            playButtonHoverSound();
+        });
+
+        function handleSend() {
+            const text = questionInput.value.trim();
+            if (text === "" || canPickCards) return;
+
+            initAudio();
+
+            currentQuestion = text;
+            addMessage(currentQuestion, "user");
+
+            questionInput.value = "";
+            questionInput.disabled = true;
+            sendBtn.disabled = true;
+
+            setTimeout(() => {
+                addMessage("Embaralhando o deck... Passe as mãos sobre a mesa, concentre-se na sua pergunta e puxe 3 cartas.", "bot");
+                activateTable();
+            }, 800);
+        }
+
+        function shuffleArray(array) {
+            let curId = array.length;
+            while (0 !== curId) {
+                let randId = Math.floor(Math.random() * curId);
+                curId -= 1;
+                let tmp = array[curId];
+                array[curId] = array[randId];
+                array[randId] = tmp;
+            }
+            return array;
+        }
+
+        function activateTable() {
+            canPickCards = true;
+            drawnCards = [];
+            chosenContainer.innerHTML = '';
+            spreadContainer.innerHTML = '';
+
+            deckCopy = shuffleArray([...tarotDeck]);
+
+            deckCopy.forEach((cardObj, index) => {
+                const spreadCard = document.createElement('div');
+                spreadCard.className = 'spread-card';
+                spreadCard.onmouseenter = () => {
+                    if (canPickCards) playHoverChime();
+                };
+                spreadCard.onclick = () => pickCardFromSpread(spreadCard, index);
+                spreadContainer.appendChild(spreadCard);
+            });
+        }
+
+        function pickCardFromSpread(element, index) {
+            if (!canPickCards || drawnCards.length >= 3) return;
+
+            playCardSelectSound();
+
+            element.classList.add('hidden');
+
+            const drawnCard = deckCopy[index];
+            drawnCards.push(drawnCard);
+
+            const bigCard = document.createElement('div');
+            bigCard.className = 'card';
+            bigCard.innerHTML = `
+                <div class="card-inner">
+                    <div class="card-back">
+                        <div class="card-emoji">${drawnCard.emoji}</div>
+                        <div class="card-name">${drawnCard.nome}</div>
+                    </div>
+                </div>`;
+            chosenContainer.appendChild(bigCard);
+
+            if (drawnCards.length === 3) {
+                canPickCards = false;
+                setTimeout(() => { spreadContainer.innerHTML = ''; }, 500);
+                setTimeout(() => {
+                    const cardNames = drawnCards.map(c => `<b>${c.nome}</b>`);
+                    addMessage(`Lendo as cartas: ${cardNames[0]}, ${cardNames[1]} e ${cardNames[2]}... Aguarde.`, "bot");
+                    fetchReading();
+                }, 1000);
+            }
+        }
+
+        // ==========================================
+        // COMUNICAÇÃO COM O SEU SERVIDOR (BACKEND)
+        // ==========================================
+        async function fetchReading() {
+            try {
+                // Cria um array só com os nomes das cartas para o backend entender fácil
+                const nomesDasCartas = drawnCards.map(carta => carta.nome);
+
+                // Em vez de chamar a URL do Google, chama o seu servidor!
+                const response = await fetch('/api/tarot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        pergunta: currentQuestion, 
+                        cartas: nomesDasCartas 
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro de comunicação com o Oráculo (Status: ${response.status})`);
+                }
+
+                // Recebe a resposta mágica que o seu server.js gerou
+                const data = await response.json();
+
+                if (data.erro) {
+                    throw new Error(data.erro);
+                }
+
+                // Troca as quebras de linha por <br> para ficar bonito no HTML
+                let aiResponse = data.resposta.replace(/\n/g, '<br>');
+
+                // Adiciona a Oração do Pai Nosso no começo (com um separador dourado)
+                const oracao = `<b>🙏 Pai nosso, que estais nos céus, santificado seja o vosso nome, venha a nós o vosso reino, seja feita a vossa vontade, assim na terra como no céu. O Pão nosso de cada dia nos dai hoje. Perdoai as nossas ofensas, assim como nós perdoamos a quem nos tem ofendido, mas livrai-nos do mal. Amém!</b><br><br><hr style="border-color: #d4af37; opacity: 0.3; margin: 10px 0;"><br>`;
+                
+                // Exibe no chat
+                addMessage(oracao + aiResponse, "bot");
+
+            } catch (error) {
+                console.error("Erro:", error);
+                addMessage(`⚠️ <b>As energias estão turvas:</b> Não foi possível conectar ao universo. Tente novamente.`, "bot");
+            } finally {
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            setTimeout(() => {
+                addMessage("As cartas falaram. ✨ Clique abaixo se desejar consultar o Oráculo novamente.", "bot");
+                showRestartMode();
+            }, 2000);
+        }
+
+        function restartCycle() {
+            drawnCards      = [];
+            currentQuestion = "";
+            canPickCards    = false;
+
+            chosenContainer.innerHTML = '';
+            spreadContainer.innerHTML = '';
+
+            showInputMode();
+        }
+
+    </script>
+</body>
+</html>
