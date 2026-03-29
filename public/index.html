@@ -167,6 +167,22 @@
         #send-btn:hover { background: var(--gold-hover); box-shadow: 0 0 10px var(--gold-hover); }
         #send-btn:disabled { background: #444; color: #777; cursor: not-allowed; box-shadow: none; }
 
+        #edit-btn {
+            display: none;
+            background: #442266;
+            color: var(--text-light);
+            border: 1px solid var(--primary-gold);
+            padding: 0 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.85rem;
+            height: 44px;
+            white-space: nowrap;
+        }
+        #edit-btn:hover { background: #552b80; box-shadow: 0 0 10px rgba(212, 175, 55, 0.4); }
+
         #restart-btn {
             display: none;
             width: 100%;
@@ -314,6 +330,7 @@
         <div class="input-section" id="input-section">
             <input type="text" id="question-input" placeholder="O que você deseja saber?" autocomplete="off">
             <button id="send-btn">Enviar</button>
+            <button id="edit-btn">✏️ Editar Pergunta</button>
             <button id="restart-btn">🔮 Fazer outra pergunta</button>
         </div>
 
@@ -477,6 +494,7 @@
         const chatSection     = document.getElementById('chat-section');
         const questionInput   = document.getElementById('question-input');
         const sendBtn         = document.getElementById('send-btn');
+        const editBtn         = document.getElementById('edit-btn');
         const restartBtn      = document.getElementById('restart-btn');
         const spreadContainer = document.getElementById('spread-container');
         const chosenContainer = document.getElementById('chosen-container');
@@ -492,6 +510,7 @@
             questionInput.style.display = 'flex';
             sendBtn.style.display       = 'block';
             restartBtn.style.display    = 'none';
+            editBtn.style.display       = 'none';
             questionInput.disabled = false;
             sendBtn.disabled       = false;
             questionInput.focus();
@@ -501,6 +520,7 @@
             questionInput.style.display = 'none';
             sendBtn.style.display       = 'none';
             restartBtn.style.display    = 'block';
+            editBtn.style.display       = 'none';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -523,6 +543,23 @@
             playButtonHoverSound();
         });
 
+        editBtn.addEventListener('click', () => {
+            playButtonHoverSound();
+            canPickCards = false;
+            drawnCards = [];
+            chosenContainer.innerHTML = '';
+            spreadContainer.innerHTML = '';
+            
+            questionInput.disabled = false;
+            sendBtn.disabled = false;
+            editBtn.style.display = 'none';
+            
+            questionInput.value = currentQuestion;
+            questionInput.focus();
+            
+            addMessage("Pode corrigir sua pergunta abaixo e enviar novamente.", "bot");
+        });
+
         function handleSend() {
             const text = questionInput.value.trim();
             if (text === "" || canPickCards) return;
@@ -538,6 +575,7 @@
 
             setTimeout(() => {
                 addMessage("Embaralhando o deck... Passe as mãos sobre a mesa, concentre-se na sua pergunta e puxe 3 cartas.", "bot");
+                editBtn.style.display = 'block';
                 activateTable();
             }, 800);
         }
@@ -596,6 +634,7 @@
 
             if (drawnCards.length === 3) {
                 canPickCards = false;
+                editBtn.style.display = 'none';
                 setTimeout(() => { spreadContainer.innerHTML = ''; }, 500);
                 setTimeout(() => {
                     const cardNames = drawnCards.map(c => `<b>${c.nome}</b>`);
@@ -666,3 +705,4 @@
     </script>
 </body>
 </html>
+
