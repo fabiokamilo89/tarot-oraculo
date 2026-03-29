@@ -128,6 +128,7 @@
         .input-section {
             padding: 15px;
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             border-top: 1px solid rgba(212, 175, 55, 0.2);
             background: rgba(10, 4, 18, 0.9);
@@ -292,6 +293,10 @@
         .card-name { font-size: 0.7rem; font-weight: bold; line-height: 1.2; text-transform: uppercase; }
 
                 @media (max-width: 480px) {
+            #edit-btn {
+                width: 100%;
+                margin-top: 5px;
+            }
             .app-container {
                 height: auto; /* Permite que o fundo roxo cresça junto com as cartas */
                 min-height: 100vh;
